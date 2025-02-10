@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        /* Animated Gradient Text */
+        .animated-gradient-text {
+            font-size: 9rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #99a21f, #58a8cb, #4caf50, #b170cd, #da3137);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: animatedText 4s infinite linear;
+        }
+
+        @keyframes animatedText {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Background Video Styling */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        /* Content Floating Over Video */
+        .content {
+            position: relative;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.6); /* Optional: Improves text readability */
+            color: white;
+            padding: 20px;
+        }
+        
+        .neon-green {
+            color: #39FF14; /* Neon green */
+            text-shadow: 0 0 5px #39FF14, 0 0 10px #39FF14, 0 0 15px #39FF14;
+        }
+
+        /* Full-screen Welcome Section */
+        .welcome-section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    
+    <!-- Background Video -->
+    <video autoplay loop muted playsinline id="bg-video">
+        <source src="{{ url_for('static', filename='video/explosives.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Full-screen Welcome Section -->
+    <div class="welcome-section">
+        <h1 class="text-9xl font-extrabold animated-gradient-text leading-tight">
+            Welcome, {{ username }}
+        </h1>
+
+        <p class="text-3xl font-semibold text-gray-600 leading-relaxed">
+            Ready to dive into something exciting today? 🚀
+        </p>
+
+        <p class="text-xl text-gray-500 mt-2 leading-relaxed">
+            We’ve got a huge pool of awesome functionalities waiting for you to explore. 🌊
+        </p>
+
+        <p class="text-xl text-gray-500 leading-relaxed">
+            What’s on your mind? Let’s make today awesome together! 💡✨
+        </p>
+
+        <!-- Scroll Down Link -->
+        <a href="#dashboard-content"
+            class="mt-8 text-lg text-blue-400 hover:text-blue-500 animate-bounce transition-all duration-300 ease-in-out">
+            ↓ Scroll Down
+        </a>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboard-content" class="content container mx-auto p-6">
+        <h4 id="login-timer" class="text-2xl font-semibold text-blue-400"></h4>
+
+        <!-- Notes Section -->
+        <h3 class="text-3xl font-bold mt-6 mb-4">Notes</h3>
+        <form method="POST" action="{{ url_for('dashboard') }}" class="mb-4">
+            {{ note_form.hidden_tag() }}
+            {{ note_form.content(class="w-full p-3 rounded bg-gray-800 border border-gray-600 text-white", placeholder="Enter a new note") }}
+            <button type="submit" class="mt-3 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Save Note</button>
+        </form>
+
+        <ul class="space-y-2">
+            {% for note in notes %}
+            <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                <span>{{ note.content }}</span>
+                <div>
+                    <a href="{{ url_for('edit_note', note_id=note.id) }}" class="px-3 py-1 bg-yellow-500 text-white rounded">Edit</a>
+                    <a href="{{ url_for('delete_note', note_id=note.id) }}" class="px-3 py-1 bg-red-500 text-white rounded">Delete</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- File Upload Section -->
+        <h3 class="text-3xl font-bold mt-6 mb-4">File Upload</h3>
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload') }}">
+            {{ upload_form.hidden_tag() }}
+            {{ upload_form.file(class="w-full p-3 rounded bg-gray-800 border border-gray-600 text-white") }}
+            <button type="submit" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Upload</button>
+        </form>
+
+        <!-- Uploaded Files Section -->
+        <h3 class="text-3xl font-bold mt-6 mb-4">Uploaded Files</h3>
+        <ul class="space-y-2">
+            {% for file in files %}
+            <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                <a href="{{ url_for('uploaded_file', filename=file) }}" class="text-blue-400">{{ file }}</a>
+                <form method="POST" action="{{ url_for('delete_file', filename=file) }}">
+                    <button type="submit" class="px-3 py-1 bg-red-500 text-white rounded">Delete</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Chat Section -->
+        <h3 class="text-3xl font-bold mt-6 mb-4">Chat</h3>
+        <a href="{{ url_for('chat') }}" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Go to Chat</a>
+
+        <!-- Messages Received Section -->
+        <h3 class="text-3xl font-bold mt-6 mb-4">Messages Received</h3>
+        <ul class="space-y-2" id="messages-list">
+            {% for message in received_messages %}
+            <li class="bg-gray-800 p-3 rounded-lg">
+                <strong class="text-blue-400">{{ message.sender.username }}:</strong> {{ message.content }}
+                <small class="text-gray-400 block">Received at: {{ message.timestamp }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Centered Logout Button -->
+        <div class="flex justify-center mt-6">
+            <a href="{{ url_for('logout') }}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg">Logout</a>
+        </div>
+    </div>
+
+    <!-- WebSocket Script for Real-time Message Updates -->
+    <script>
+        var socket = io.connect("http://" + document.domain + ":" + location.port);
+        
+        socket.on("receive_message", function(data) {
+            var messagesList = document.getElementById("messages-list");
+            var newMessage = document.createElement("li");
+            newMessage.classList.add("bg-gray-800", "p-3", "rounded-lg");
+            newMessage.innerHTML = `<strong class="text-blue-400">${data.sender}:</strong> ${data.content}<small class="text-gray-400 block">Received at: ${data.timestamp}</small>`;
+            messagesList.prepend(newMessage);
+        });
+    </script>
+</body>
+</html>
